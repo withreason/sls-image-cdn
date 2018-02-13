@@ -1,12 +1,7 @@
 import { S3 } from 'aws-sdk';
+import env from './env';
 
 const s3 = new S3();
-
-const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
-const CUSTOM_URL = process.env.SOURCE_S3_WEBSITE;
-const CLOUD_FRONT_DOMAIN = process.env.CLOUD_FRONT_DOMAIN;
-const AWS_REGION = process.env.AWS_REGION;
-const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 31536000; // default to 1 yesr
 
 /**
  * Downloads a image from the bucket.
@@ -17,7 +12,7 @@ const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 31536000; // default to 1 yes
 export const downloadImage = (key, format) => {
 	const filename = [key, '.', format].join('');
 	const params = {
-		Bucket: BUCKET_NAME,
+		Bucket: env.bucketName,
 		Key: filename,
 	};
 
@@ -43,12 +38,12 @@ export const downloadImage = (key, format) => {
 export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 	const filename = [key, ',', paramsString, '.', format].join('');
 	const params = {
-		Bucket: BUCKET_NAME,
+		Bucket: env.bucketName,
 		Key: filename,
 		Body: imageBuffer,
 		ACL: 'public-read',
 		ContentType: ['image', format].join('/'),
-		CacheControl: `max-age=${CACHE_MAX_AGE}`
+		CacheControl: `max-age=${env.cache.maxAge}`
 	};
 
 	return new Promise((resolve, reject) => {
@@ -57,9 +52,9 @@ export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 				console.error(err.code, '-', err.message);
 				return reject(err);
 			}
-			const url = CLOUD_FRONT_DOMAIN ? `https://${CLOUD_FRONT_DOMAIN}/${filename}`
-        : CUSTOM_URL ? `${CUSTOM_URL}/${filename}`
-				: `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
+			const url = env.cloudFront.domain ? `https://${env.cloudFront.domain}/${filename}`
+        : env.customUrl ? `${env.customUrl}/${filename}`
+				: `http://${env.bucketNam}.s3-website-${env.region}.amazonaws.com/${filename}`;
 			return resolve({
         url,
 				contentType: params.ContentType,

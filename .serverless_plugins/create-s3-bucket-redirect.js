@@ -55,8 +55,6 @@ class CreateS3BucketRedirect {
         ],
       },
     }
-
-    console.log(JSON.stringify(params))
     s3.putBucketWebsite(params, (err, data) => {
       if (err) {
         console.log(err, err.stack) // an error occurred
@@ -67,5 +65,4 @@ class CreateS3BucketRedirect {
   }
 }
 
-// now we need to make our plugin object available to the framework to execute
 module.exports = CreateS3BucketRedirect
