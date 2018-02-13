@@ -16,10 +16,5 @@ const schema = Joi.object().keys({
 
 export default (params) => {
   const { error, value } = Joi.validate(params, schema)
-
-  if (error) {
-    return Promise.reject(error)
-  }
-
-  return Promise.resolve(value)
+  return error ? Promise.reject(error) :  Promise.resolve(value);
 }

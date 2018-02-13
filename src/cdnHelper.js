@@ -2,13 +2,21 @@ import { S3 } from 'aws-sdk';
 import s3PublicUrl from 's3-public-url';
 
 const s3 = new S3();
-// @todo: write more docs
-// downloads image from the bucket
 
-export const downloadImage = (bucket, guid, format) => {
+const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
+const SOURCE_URL = process.env.SOURCE_S3_WEBSITE;
+const AWS_REGION = process.env.AWS_REGION;
+
+/**
+ * Downloads a image from the bucket.
+ * @param guid the id the the image to download.
+ * @param format the image format.
+ * @returns {Promise<any>} a promise of the image data.
+ */
+export const downloadImage = (guid, format) => {
 	const filename = [guid, '.', format].join('');
 	const params = {
-		Bucket: bucket,
+		Bucket: BUCKET_NAME,
 		Key: filename,
 	};
 
@@ -16,28 +24,25 @@ export const downloadImage = (bucket, guid, format) => {
 		s3.getObject(params, (err, data) => {
 			if (err) {
 				console.error(err.code, '-', err.message);
-
 				return reject(err);
 			}
-
 			return resolve(data.Body);
-
-        // fs.writeFile(['', 'tmp', filename].join('/'), data.Body, (err) => {
-        //   if(err)
-        //     console.log(err.code, "-", err.message);
-        //   return reject(err);
-        // });
 		});
 	});
 };
 
-// @todo: write more docs
-// upload image to bucket
-
-export const uploadImage = (bucket, imageBuffer, guid, format, paramsString = '') => {
+/**
+ * Uploads an image to a bucket
+ * @param imageBuffer the image data to upload.
+ * @param guid the id the the image to upload.
+ * @param format the image format.
+ * @param paramsString the set of parameters used to create the image in url format.
+ * @returns {Promise<any>} { url, }
+ */
+export const uploadImage = (imageBuffer, guid, format, paramsString = '') => {
 	const filename = [guid, ',', paramsString, '.', format].join('');
 	const params = {
-		Bucket: bucket,
+		Bucket: BUCKET_NAME,
 		Key: filename,
 		Body: imageBuffer,
 		ACL: 'public-read',
@@ -48,13 +53,9 @@ export const uploadImage = (bucket, imageBuffer, guid, format, paramsString = ''
 		s3.putObject(params, (err, data) => {
 			if (err) {
 				console.error(err.code, '-', err.message);
-
 				return reject(err);
 			}
-      // @todo: add support for different region: https://www.npmjs.com/package/s3-public-url
-			let url = s3PublicUrl.getHttps(bucket, filename);
-            url = process.env.SOURCE_S3_WEBSITE ? process.env.SOURCE_S3_WEBSITE + filename : url;
-            // http://wse-quiz-staging-cdn.s3-website-eu-west-1.amazonaws.com/
+			const url = SOURCE_URL ? `${SOURCE_URL}/${filename}` : `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
 			return resolve({
 				url,
 				...data,

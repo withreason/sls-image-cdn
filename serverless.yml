@@ -1,30 +1,4 @@
-service: reason-website-cdn
-
-provider:
-  name: aws
-  stage: staging
-  runtime: nodejs6.10
-  region: eu-west-1
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - "s3:*"
-      Resource: "*"
-  environment:
-    SOURCE_S3_BUCKET_NAME: ${env:SOURCE_S3_BUCKET_NAME}
-    SOURCE_S3_PREFIX: ${env:SOURCE_S3_PREFIX}
-    SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE}
-
-functions:
-  resizer:
-    handler: index.resizer
-    events:
-      - http:
-          path: resizer/{params}
-          method: get
-      - http:
-          path: resizer/{params}/{request_filename}
-          method: get
+service: sls-image-cdn
 
 plugins:
   - serverless-webpack
@@ -34,6 +8,32 @@ plugins:
 custom:
   webpack: webpack.config.js
   webpackIncludeModules: true
+  default:
+    stage: dev
+    region: eu-west-1
+    bucketName: ${self:service}
+
+provider:
+  name: aws
+  stage: ${opt:stage, self:custom.default.stage}
+  runtime: nodejs6.10
+  region: ${opt:region, self:custom.default.region}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - "s3:*"
+      Resource: "*"
+  environment:
+    SOURCE_S3_BUCKET_NAME: ${env:SOURCE_S3_BUCKET_NAME}
+    SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE, ''}
+
+functions:
+  resizer:
+    handler: index.resizer
+    events:
+      - http:
+          path: resizer/{path+}
+          method: get
 
 resources:
   Resources:
@@ -42,21 +42,3 @@ resources:
       Properties:
         BucketName: ${env:SOURCE_S3_BUCKET_NAME}
         AccessControl: PublicRead
-        # CorsRules:
-        #   AllowedHeader:
-        #     - '*'
-        #   AllowedOrigin:
-        #     - '*'
-        #   AllowedMethods:
-        #     - GET
-        #     - HEAD
-        # WebsiteConfiguration:
-        #   ErrorDocument: 'error.html'
-        #   IndexDocument: 'index.html'
-        #   RoutingRules:
-        #     - RedirectRule:
-        #         HttpRedirectCode: 302
-        #         HostName: "google.com"
-        #         Protocol: https
-        #       RoutingRuleCondition:
-        #         HttpErrorCodeReturnedEquals: 404
