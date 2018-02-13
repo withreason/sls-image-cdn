@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "execute": "aws s3 cp data/pastel_400x400.jpg s3://${SOURCE_S3_BUCKET_NAME}/${SOURCE_S3_PREFIX}/pastel_400x400.jpg",
-    "deploy": "docker build -t sls-zone-file-cdn . && docker run -it sls-zone-file-cdn",
+    "deploy": "node ./deploy.js",
     "deploy:function": "serverless deploy function -f imageResizer",
     "run:dev": "serverless offline -s dev",
     "invoke": "serverless invoke -f imageResizer --path data/event.json",
