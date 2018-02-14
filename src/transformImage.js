@@ -54,10 +54,16 @@ export const transformImage = (src, options) => {
     sImg.max()
     sImg.crop(cropOption)
   }
+
   // jpeg compression
   if (options.quality && (options.format === 'jpg' || options.format === 'jpeg')) {
     sImg.jpeg({ quality: options.quality })
   }
+
+  //TODO add png compression.
+  // if (options.compression && options.format === 'png') {
+  //   sImg.png({ compressionLevel: options.compression })
+  // }
 
   // output
   return sImg.toBuffer()

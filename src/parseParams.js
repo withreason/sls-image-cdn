@@ -45,6 +45,9 @@ the output is an object in the form:
   format: fileExtension
 }
 */
+
+//TODO add the ability to set defaults for each property in the config file.
+
 export default (path) => {
 	const groups = path.match(PATH_PATTERN);
 	if (!groups) {
