@@ -9,12 +9,12 @@ const AWS_REGION = process.env.AWS_REGION;
 
 /**
  * Downloads a image from the bucket.
- * @param guid the id the the image to download.
+ * @param key the id the the image to download.
  * @param format the image format.
  * @returns {Promise<any>} a promise of the image data.
  */
-export const downloadImage = (guid, format) => {
-	const filename = [guid, '.', format].join('');
+export const downloadImage = (key, format) => {
+	const filename = [key, '.', format].join('');
 	const params = {
 		Bucket: BUCKET_NAME,
 		Key: filename,
@@ -34,13 +34,13 @@ export const downloadImage = (guid, format) => {
 /**
  * Uploads an image to a bucket
  * @param imageBuffer the image data to upload.
- * @param guid the id the the image to upload.
+ * @param key the id the the image to upload.
  * @param format the image format.
  * @param paramsString the set of parameters used to create the image in url format.
  * @returns {Promise<any>} { url, }
  */
-export const uploadImage = (imageBuffer, guid, format, paramsString = '') => {
-	const filename = [guid, ',', paramsString, '.', format].join('');
+export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
+	const filename = [key, ',', paramsString, '.', format].join('');
 	const params = {
 		Bucket: BUCKET_NAME,
 		Key: filename,

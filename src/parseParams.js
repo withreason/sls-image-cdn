@@ -17,20 +17,28 @@ for (const k in transformers) {
 	transformersReverse[transformers[k]] = k;
 }
 
+const PARAM_PATTERN_STR = ',([a-z]+)_([a-zA-Z0-9.]+)';
+const PARAM_PATTERN = new RegExp(PARAM_PATTERN_STR);
+const PARAM_PATTERN_GLOBAL = new RegExp(PARAM_PATTERN_STR, 'g');
+
+const KEY_PATTERN_STR = '(.+?)';
+const FORMAT_PATTERN_STR = '\\.([a-zA-Z\\d]*)';
+const PATH_PATTERN = new RegExp(`^${KEY_PATTERN_STR}((${PARAM_PATTERN_STR})*)${FORMAT_PATTERN_STR}$`);
+
 /*
 Parse path and sort params
 This function takes path in the form
 
-/file_guid,param1_value1,param2_value2,param3_value3.fileExtension,
+/file_key,param1_value1,param2_value2,param3_value3.fileExtension,
 
 where param can be a-zA-Z0-9 and value can be a-zA-Z0-9 and . (dot)
-and extention can be a-zA-Z (note, numbers are not currently supported in extentions)
+and extension can be a-zA-Z0-9
 Example:
 /grandmother,w_600,h_800.jpeg
 
 the output is an object in the form:
 {
-  guid: file_guid,
+  key: file_key,
   param1: value1,
   param2: value2,
   param2: value3
@@ -38,45 +46,42 @@ the output is an object in the form:
 }
 */
 export default (path) => {
-	const params = path.match(/([a-z]*_[a-zA-Z.]*)([^,/.]+)/g) || [];
-	const guidRegex = /\/([a-zA-Z\d-]*)[,|.]/g;
-	const fileFormatRegex = /\.([a-zA-Z\d]*)$/g;
-	const guidArr = guidRegex.exec(path);
-	const fileFormatArr = fileFormatRegex.exec(path);
-	let guid = null;
+	const groups = path.match(PATH_PATTERN);
+	if (!groups) {
+    console.error(`The path ${path} did not conform to the path patten and could not be parsed`);
+    return {};
+  }
+	const key = groups[1];
+  const params = groups[2];
+  const format = groups[6];
 
-	if (guidArr && guidArr.length > 1) {
-		guid = guidArr[1];
-	}
-	let format = null;
+  const splitParams = params.match(PARAM_PATTERN_GLOBAL);
+  const paramsArr = [];
+  if (splitParams) {
+    for (let i = 0; i < splitParams.length; i++) {
+      const splitParam = splitParams[i].match(PARAM_PATTERN);
+      const paramShortName = splitParam[1];
+      const value = splitParam[2];
 
-	if (fileFormatArr && fileFormatArr.length > 1) {
-		format = fileFormatArr[1];
-	}
-	const paramsArr = params.map((param) => {
-		const keyValueArr = param.split('_');
-		if(!transformers[keyValueArr[0]]){
-			console.log('transformer not found', keyValueArr[0], transformers[keyValueArr[0]]);
-			console.log('transformer not found had value', keyValueArr[1]);
-		}
-		return { name: transformers[keyValueArr[0]] || false, value: keyValueArr[1] };
-	});
-	const paramsObj = Object.assign(
-    { guid, format },
+      const name = transformers[paramShortName] || false;
+      if(!name){
+        console.error('transformer not found', paramShortName, transformers[paramShortName]);
+        console.error('transformer not found had value', value);
+      }
+      paramsArr.push({ name, value });
+    }
+  }
+
+	return Object.assign({ key, format },
     ...paramsArr.map(({ name, value }) => (name ? { [name]: value } : null)),
   );
-	return Object.keys(paramsObj).sort().reduce((result, key) => {
-		result[key] = paramsObj[key];
-
-		return result;
-	}, {});
 };
 
 export const paramsToPathString = (params) => {
 	const newParams = [];
 
 	for (const key in params) {
-		if (key === 'format' || key === 'guid') {
+		if (key === 'format' || key === 'key') {
 			continue;
 		}
     const value = params[key];

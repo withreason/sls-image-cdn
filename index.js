@@ -5,19 +5,19 @@ import {transformImage} from './src/transformImage';
 
 const resizerPromise = (event, context, path) => {
   let modifiers = parseParams(path);
-  if (modifiers.guid === 'favicon') {
+  if (modifiers.key === 'favicon') {
     return Promise.resolve({statusCode: 404, body: ''})
   }
   console.log('Modifiers', modifiers);
   return validateParams(modifiers)
     .then(validModifiers => modifiers = validModifiers)
     .then(() => downloadImage(
-      modifiers.guid,
+      modifiers.key,
       modifiers.format))
     .then(image => transformImage(image, modifiers))
     .then(transformedImageBuffer => uploadImage(
       transformedImageBuffer,
-      modifiers.guid,
+      modifiers.key,
       modifiers.format,
       paramsToPathString(modifiers)))
     .then(info => {
@@ -35,7 +35,7 @@ const resizerPromise = (event, context, path) => {
 };
 
 export const resizer = (event, context, callback) => {
-  const path = event.pathParameters.path;
+  const path = decodeURIComponent(event.pathParameters.path);
   if (!path) {
     return callback(new Error('Path cannot be empty'));
   }

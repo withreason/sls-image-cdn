@@ -1,6 +1,5 @@
 class CreateS3BucketRedirect {
   constructor(serverless, options) {
-    console.log('OPTIONS:', JSON.stringify(options))
     this.hooks = {
       // this is where we declare the hook we want our code to run
       'after:deploy:finalize': () => { this.run(serverless) },
