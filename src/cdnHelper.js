@@ -1,5 +1,4 @@
 import { S3 } from 'aws-sdk';
-import s3PublicUrl from 's3-public-url';
 
 const s3 = new S3();
 

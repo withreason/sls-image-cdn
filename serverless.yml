@@ -1,4 +1,4 @@
-service: sls-image-cdn
+service: sls-image-cdn-${env:SOURCE_S3_BUCKET_NAME}
 
 plugins:
   - serverless-webpack
