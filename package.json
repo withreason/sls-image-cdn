@@ -10,11 +10,13 @@
   "scripts": {
     "deploy": "node ./deploy.js",
     "start": "serverless offline -s dev",
+    "test": "mocha --compilers js:babel-core/register test/**",
     "build": "serverless webpack --out .webpack"
   },
   "dependencies": {
     "babel-polyfill": "^6.16.0",
     "joi": "^13.1.2",
+    "s3-public-url": "^1.0.0",
     "sharp": "^0.19.0"
   },
   "devDependencies": {
@@ -35,6 +37,6 @@
     "webpack-node-externals": "^1.5.4"
   },
   "keywords": [],
-  "author": "",
+  "author": " With Reason Ltd",
   "license": "ISC"
 }

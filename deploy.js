@@ -2,21 +2,26 @@ const fs = require('fs');
 const { exec } = require('child_process');
 require('dotenv').config();
 
+const envVars = [
+	'aws_access_key_id',
+	'aws_secret_access_key',
+	'AWS_ACCESS_KEY_ID',
+	'AWS_SECRET_ACCESS_KEY',
+	'AWS_REGION',
+	'SOURCE_S3_BUCKET_NAME',
+	'SOURCE_S3_WEBSITE',
+	'CLOUD_FRONT_URL'
+];
+
 const exportStatement = (name, value) => name && value ? `export ${name}="${value}" && ` : '';
+const exportStatements = envVars.map(envVar => exportStatement(envVar, process.env[envVar.toUpperCase()])).join(' ');
 
 const dockerFile = `
 FROM lambci/lambda:build-nodejs6.10
 
 ADD . .
 
-RUN ${exportStatement('aws_access_key_id', process.env.AWS_ACCESS_KEY_ID)} \\
-${exportStatement('aws_secret_access_key', process.env.AWS_SECRET_ACCESS_KEY)} \\
-${exportStatement('AWS_ACCESS_KEY_ID', process.env.AWS_ACCESS_KEY_ID)} \\
-${exportStatement('AWS_SECRET_ACCESS_KEY', process.env.AWS_SECRET_ACCESS_KEY)} \\
-${exportStatement('AWS_REGION', process.env.AWS_REGION)} \\
-${exportStatement('SOURCE_S3_BUCKET_NAME', process.env.SOURCE_S3_BUCKET_NAME)} \\
-${exportStatement('SOURCE_S3_WEBSITE', process.env.SOURCE_S3_BUCKET_URL)} \\
-npm install && npm install serverless -g && sls deploy -v && exit 0
+RUN ${exportStatements} npm install && npm install serverless -g && sls deploy -v && exit 0
 `;
 
 

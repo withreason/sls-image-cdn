@@ -1,9 +1,11 @@
 import { S3 } from 'aws-sdk';
+import s3PublicUrl from 's3-public-url';
 
 const s3 = new S3();
 
 const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
-const SOURCE_URL = process.env.SOURCE_S3_WEBSITE;
+const CUSTOM_URL = process.env.SOURCE_S3_WEBSITE;
+const CLOUD_FRONT_URL = process.env.CLOUD_FRONT_URL;
 const AWS_REGION = process.env.AWS_REGION;
 
 /**
@@ -54,7 +56,10 @@ export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 				console.error(err.code, '-', err.message);
 				return reject(err);
 			}
-			const url = SOURCE_URL ? `${SOURCE_URL}/${filename}` : `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
+			//TODO fix the cloud front redirect issue properly when adding cloud front to the cdn stack
+			const url = CLOUD_FRONT_URL ? s3PublicUrl.getHttps(BUCKET_NAME, filename, AWS_REGION)
+				: CUSTOM_URL ? `${CUSTOM_URL}/${filename}`
+				: `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
 			return resolve({
 				url,
 				...data,
