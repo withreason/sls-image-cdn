@@ -9,9 +9,10 @@
   },
   "scripts": {
     "deploy": "node ./deploy.js",
-    "start": "serverless offline -s dev",
+    "undeploy": "export $(cat .env | xargs) && ./node_modules/serverless/bin/serverless remove",
+    "start": "./node_modules/serverless/bin/serverless offline -s dev",
     "test": "mocha --compilers js:babel-core/register test/**",
-    "build": "serverless webpack --out .webpack"
+    "build": "./node_modules/serverless/bin/serverless webpack --out .webpack"
   },
   "dependencies": {
     "babel-polyfill": "^6.16.0",

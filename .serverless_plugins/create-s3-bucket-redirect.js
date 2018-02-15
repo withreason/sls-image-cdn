@@ -7,21 +7,8 @@ class CreateS3BucketRedirect {
   }
   run(serverless) {
     const lambdaFunctionName = 'resizer'
-    const resources = serverless.service.provider.compiledCloudFormationTemplate.Resources
     const stage = serverless.service.provider.stage
-    // Let's check if we already specified WebsiteConfiguration for our S3 bucket.
-    // If it's already specified we don't need to do any work.
 
-    if (!resources.SourceImageBucket) {
-      console.error('We have not defined source bucket and nothing will work without it!, this could be beacuse it already exists')
-      return
-    }
-    if (resources.SourceImageBucket &&
-      resources.SourceImageBucket.Properties.WebsiteConfiguration) {
-      console.log('WE DONT NEED TO DO ANY WORK!!!')
-
-      return
-    }
     let apiGatewayEndpoint = null
 
     serverless.pluginManager.plugins.forEach((plugin) => {
@@ -37,7 +24,6 @@ class CreateS3BucketRedirect {
     }
     apiGatewayEndpoint = apiGatewayEndpoint
       .substring('https://'.length, apiGatewayEndpoint.length - (stage.length + 1))
-    console.log('API_GATEWAY', apiGatewayEndpoint)
 
     const s3 = new serverless.providers.aws.sdk.S3()
 

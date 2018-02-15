@@ -2,16 +2,19 @@ service: ${file(./configLogic.js):serviceName}
 
 plugins:
   - serverless-webpack
-  - create-s3-bucket-redirect
   - serverless-offline
+  - create-s3-bucket-redirect
+  - empty-s3-bucket
 
 custom:
   webpack: webpack.config.js
   webpackIncludeModules: true
+  bucketDeletionPolicy: ${env:SOURCE_S3_BUCKET_DELETION_POLICY, self:custom.default.bucketDeletionPolicy}
   default:
     stage: dev
     region: eu-west-1
     bucketName: ${self:service}
+    bucketDeletionPolicy: Retain
 
 provider:
   name: aws
@@ -22,7 +25,11 @@ provider:
     - Effect: Allow
       Action:
         - "s3:*"
-      Resource: "*"
+      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}"
+    - Effect: Allow
+      Action:
+        - "s3:*"
+      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}/*"
   environment:
     SOURCE_S3_BUCKET_NAME: ${env:SOURCE_S3_BUCKET_NAME}
     SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE, ''}
@@ -38,8 +45,9 @@ functions:
 
 resources:
   Resources:
-    SourceImageBucket:
+    CdnImageBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: ${self:custom.bucketDeletionPolicy}
       Properties:
         BucketName: ${env:SOURCE_S3_BUCKET_NAME}
         AccessControl: PublicRead
