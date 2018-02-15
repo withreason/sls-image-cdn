@@ -1,62 +1,53 @@
-service: reason-website-cdn
+service: ${file(./configLogic.js):serviceName}
+
+plugins:
+  - serverless-webpack
+  - serverless-offline
+  - create-s3-bucket-redirect
+  - empty-s3-bucket
+
+custom:
+  webpack: webpack.config.js
+  webpackIncludeModules: true
+  bucketDeletionPolicy: ${env:SOURCE_S3_BUCKET_DELETION_POLICY, self:custom.default.bucketDeletionPolicy}
+  default:
+    stage: dev
+    region: eu-west-1
+    bucketName: ${self:service}
+    bucketDeletionPolicy: Retain
 
 provider:
   name: aws
-  stage: staging
+  stage: ${opt:stage, self:custom.default.stage}
   runtime: nodejs6.10
-  region: eu-west-1
+  region: ${opt:region, self:custom.default.region}
   iamRoleStatements:
     - Effect: Allow
       Action:
         - "s3:*"
-      Resource: "*"
+      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}"
+    - Effect: Allow
+      Action:
+        - "s3:*"
+      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}/*"
   environment:
     SOURCE_S3_BUCKET_NAME: ${env:SOURCE_S3_BUCKET_NAME}
-    SOURCE_S3_PREFIX: ${env:SOURCE_S3_PREFIX}
-    SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE}
+    SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE, ''}
+    CLOUD_FRONT_URL: ${env:CLOUD_FRONT_URL, ''}
 
 functions:
   resizer:
     handler: index.resizer
     events:
       - http:
-          path: resizer/{params}
+          path: resizer/{path+}
           method: get
-      - http:
-          path: resizer/{params}/{request_filename}
-          method: get
-
-plugins:
-  - serverless-webpack
-  - create-s3-bucket-redirect
-  - serverless-offline
-
-custom:
-  webpack: webpack.config.js
-  webpackIncludeModules: true
 
 resources:
   Resources:
-    SourceImageBucket:
+    CdnImageBucket:
       Type: AWS::S3::Bucket
+      DeletionPolicy: ${self:custom.bucketDeletionPolicy}
       Properties:
         BucketName: ${env:SOURCE_S3_BUCKET_NAME}
         AccessControl: PublicRead
-        # CorsRules:
-        #   AllowedHeader:
-        #     - '*'
-        #   AllowedOrigin:
-        #     - '*'
-        #   AllowedMethods:
-        #     - GET
-        #     - HEAD
-        # WebsiteConfiguration:
-        #   ErrorDocument: 'error.html'
-        #   IndexDocument: 'index.html'
-        #   RoutingRules:
-        #     - RedirectRule:
-        #         HttpRedirectCode: 302
-        #         HostName: "google.com"
-        #         Protocol: https
-        #       RoutingRuleCondition:
-        #         HttpErrorCodeReturnedEquals: 404

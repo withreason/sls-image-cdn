@@ -3,7 +3,7 @@ import config from '../config'
 
 const schema = Joi.object().keys({
   format: Joi.string().valid('jpg', 'jpeg', 'png').required(),
-  guid: Joi.string().required(),
+  key: Joi.string().required(),
   quality: Joi.number().integer().min(0).max(100),
   width: Joi.number().integer().min(0).max(config.maximumSupportedWidth).optional(),
   height: Joi.number().integer().min(0).max(config.maximumSupportedHeight).optional(),
@@ -16,10 +16,5 @@ const schema = Joi.object().keys({
 
 export default (params) => {
   const { error, value } = Joi.validate(params, schema)
-
-  if (error) {
-    return Promise.reject(error)
-  }
-
-  return Promise.resolve(value)
+  return error ? Promise.reject(error) :  Promise.resolve(value);
 }
