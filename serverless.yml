@@ -10,10 +10,13 @@ custom:
   webpack: webpack.config.js
   webpackIncludeModules: true
   bucketDeletionPolicy: ${env:SOURCE_S3_BUCKET_DELETION_POLICY, self:custom.default.bucketDeletionPolicy}
+  bucketName: ${env:CLOUD_FRONT_DOMAIN, env:SOURCE_S3_BUCKET_NAME}
+  cloudFrontDomain: ${env:CLOUD_FRONT_DOMAIN, ''}
+  cloudFrontHostedZone: ${env:CLOUD_FRONT_HOSTED_ZONE, ''}
+  cloudFrontCertArn: ${env:CLOUD_FRONT_CERT_ARN, ''}
   default:
     stage: dev
     region: eu-west-1
-    bucketName: ${self:service}
     bucketDeletionPolicy: Retain
 
 provider:
@@ -25,15 +28,16 @@ provider:
     - Effect: Allow
       Action:
         - "s3:*"
-      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}"
+      Resource: "arn:aws:s3:::${self:custom.bucketName}"
     - Effect: Allow
       Action:
         - "s3:*"
-      Resource: "arn:aws:s3:::${env:SOURCE_S3_BUCKET_NAME}/*"
+      Resource: "arn:aws:s3:::${self:custom.bucketName}/*"
   environment:
-    SOURCE_S3_BUCKET_NAME: ${env:SOURCE_S3_BUCKET_NAME}
+    SOURCE_S3_BUCKET_NAME: ${self:custom.bucketName}
     SOURCE_S3_WEBSITE: ${env:SOURCE_S3_WEBSITE, ''}
-    CLOUD_FRONT_URL: ${env:CLOUD_FRONT_URL, ''}
+    CLOUD_FRONT_DOMAIN: ${self:custom.cloudFrontDomain}
+    CACHE_MAX_AGE: ${env:CACHE_MAX_AGE, ''}
 
 functions:
   resizer:
@@ -44,10 +48,120 @@ functions:
           method: get
 
 resources:
+  Conditions:
+    IsDeployingCloudFront:
+      Fn::Not:
+        - Fn::Or:
+          - Fn::Equals:
+            - ${self:custom.cloudFrontDomain}
+            - ''
+          - Fn::Equals:
+            - ${self:custom.cloudFrontHostedZone}
+            - ''
+          - Fn::Equals:
+            - ${self:custom.cloudFrontCertArn}
+            - ''
+
   Resources:
     CdnImageBucket:
       Type: AWS::S3::Bucket
       DeletionPolicy: ${self:custom.bucketDeletionPolicy}
       Properties:
-        BucketName: ${env:SOURCE_S3_BUCKET_NAME}
+        BucketName: ${self:custom.bucketName}
         AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: error.html
+    CdnImageCloudfront:
+      Type: AWS::CloudFront::Distribution
+      Condition: IsDeployingCloudFront
+      DependsOn:
+        - CdnImageBucket
+        - ApiGatewayRestApi
+      Properties:
+        DistributionConfig:
+          Comment: Cloudfront Distribution pointing to S3 bucket and image resizer
+          Enabled: true
+          HttpVersion: 'http2'
+          Aliases:
+            - ${self:custom.cloudFrontDomain}
+          Origins:
+          - DomainName:
+              Fn::Select:
+                - 2
+                - Fn::Split:
+                  - "/"
+                  - Fn::GetAtt: CdnImageBucket.WebsiteURL
+            OriginPath: '/images'
+            Id: S3Origin
+            CustomOriginConfig:
+              HTTPPort: '80'
+              HTTPSPort: '443'
+              OriginProtocolPolicy: http-only
+          - DomainName:
+              Fn::GetAtt: CdnImageBucket.DomainName
+            Id: S3DirectOrigin
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+          - DomainName:
+              Fn::Join:
+                - ""
+                - - Ref: 'ApiGatewayRestApi'
+                  - '.execute-api.'
+                  - Ref: 'AWS::Region'
+                  - '.amazonaws.com'
+            OriginPath: '/${self:provider.stage}'
+            Id: APIGatewayOrigin
+            CustomOriginConfig:
+              HTTPPort: '80'
+              HTTPSPort: '443'
+              OriginProtocolPolicy: https-only
+          CacheBehaviors:
+            - AllowedMethods:
+                - GET
+                - HEAD
+              Compress: true
+              PathPattern: "resizer/*"
+              TargetOriginId: APIGatewayOrigin
+              ForwardedValues:
+                QueryString: false
+                Cookies:
+                  Forward: none
+              ViewerProtocolPolicy: redirect-to-https
+            - AllowedMethods:
+                - GET
+                - HEAD
+              PathPattern: "images/*"
+              TargetOriginId: S3DirectOrigin
+              ForwardedValues:
+                QueryString: false
+                Cookies:
+                  Forward: none
+              ViewerProtocolPolicy: redirect-to-https
+          DefaultCacheBehavior:
+            AllowedMethods:
+              - GET
+              - HEAD
+            TargetOriginId: S3Origin
+            ForwardedValues:
+              QueryString: false
+              Cookies:
+                Forward: none
+            ViewerProtocolPolicy: redirect-to-https
+          PriceClass: PriceClass_All
+          ViewerCertificate:
+            AcmCertificateArn: ${self:custom.cloudFrontCertArn}
+            SslSupportMethod: sni-only
+    CdnDNSName:
+      Type: AWS::Route53::RecordSetGroup
+      Condition: IsDeployingCloudFront
+      DependsOn: CdnImageCloudfront
+      Properties:
+        HostedZoneName: ${self:custom.cloudFrontHostedZone}
+        RecordSets:
+        - Name: ${self:custom.cloudFrontDomain}
+          Type: A
+          AliasTarget:
+            HostedZoneId: Z2FDTNDATAQYW2 # This is cloudfront's hosted zone id. https://docs.aws.amazon.com/Route53/latest/APIReference/API_AliasTarget.html#Route53-Type-AliasTarget-HostedZoneId
+            DNSName:
+              Fn::GetAtt: CdnImageCloudfront.DomainName

@@ -1,12 +1,12 @@
 import { S3 } from 'aws-sdk';
-import s3PublicUrl from 's3-public-url';
 
 const s3 = new S3();
 
 const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
 const CUSTOM_URL = process.env.SOURCE_S3_WEBSITE;
-const CLOUD_FRONT_URL = process.env.CLOUD_FRONT_URL;
+const CLOUD_FRONT_DOMAIN = process.env.CLOUD_FRONT_DOMAIN;
 const AWS_REGION = process.env.AWS_REGION;
+const CACHE_MAX_AGE = process.env.CACHE_MAX_AGE || 31536000; // default to 1 yesr
 
 /**
  * Downloads a image from the bucket.
@@ -48,6 +48,7 @@ export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 		Body: imageBuffer,
 		ACL: 'public-read',
 		ContentType: ['image', format].join('/'),
+		CacheControl: `max-age=${CACHE_MAX_AGE}`
 	};
 
 	return new Promise((resolve, reject) => {
@@ -56,12 +57,12 @@ export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 				console.error(err.code, '-', err.message);
 				return reject(err);
 			}
-			//TODO fix the cloud front redirect issue properly when adding cloud front to the cdn stack
-			const url = CLOUD_FRONT_URL ? s3PublicUrl.getHttps(BUCKET_NAME, filename, AWS_REGION)
-				: CUSTOM_URL ? `${CUSTOM_URL}/${filename}`
+			const url = CLOUD_FRONT_DOMAIN ? `https://${CLOUD_FRONT_DOMAIN}/${filename}`
+        : CUSTOM_URL ? `${CUSTOM_URL}/${filename}`
 				: `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
 			return resolve({
-				url,
+        url,
+				contentType: params.ContentType,
 				...data,
 			});
 		});

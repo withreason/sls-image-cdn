@@ -1,101 +1,68 @@
-## 1. Setup Your Bucket
+# sls-image-cdn
 
-Once your bucket has been created, you will need to deploy the lambda make sure these are both accessible by the same IAM user as per setup in your AWS profile on your current machine.
+This allows you to deploy a serverless image CDN with image resizing, processing and caching on AWS in a couple of easy steps.
 
-## 2. Lambda and s3 CDN
+It uses s3, s3 website hosting, api gateway, lambda and optionally cloud front.
 
-Get this
+## To deploy a simple s3 hosted non caching instance
 
-```
-serverless install -u [this]  --name [YOUR NAME HERE]
-```
+### 1. prerequisits
 
-## 3. Deploy this
+- A working and running local docker deamon
+- a cpp compiler. npm install will fail to compile the native image processor if you dont have this. 
+It will however tell you what it needs to install. On a Mac you will need to have xcode installed.
 
-create a `.env` file with the following EV's
+### 1. Clone this repo and add your own config.
+
+Config can be either added to a `.env` file, as system properties or a combination of both. 
+The following settings need to be provided:
+
 ```
 AWS_ACCESS_KEY_ID=YOURAWSAKID
 AWS_SECRET_ACCESS_KEY=YOURAWSSAK
-SOURCE_S3_BUCKET_NAME=the-s3-dns-compat-bucket-name
 AWS_REGION='eu-west-1' # your aws region
+SOURCE_S3_BUCKET_NAME=the-s3-dns-compat-bucket-name
 ```
 
+## 2. install and deploy
 ```
-npm run deploy
-```
-
-### 4. CORS rules (This should happen automatically)
-
-Add CORS rules to your bucket if this had not happened automatically
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<CORSConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/">
-<CORSRule>
-    <AllowedOrigin>*</AllowedOrigin>
-    <AllowedMethod>GET</AllowedMethod>
-    <MaxAgeSeconds>3000</MaxAgeSeconds>
-    <AllowedHeader>Authorization</AllowedHeader>
-</CORSRule>
-<CORSRule>
-    <AllowedOrigin>*</AllowedOrigin>
-    <AllowedMethod>POST</AllowedMethod>
-    <AllowedHeader>*</AllowedHeader>
-</CORSRule>
-</CORSConfiguration>
+npm install && npm run deploy
 ```
 
-## 5. Static website hosting (This should happen automatically)
+## 3. upload an image and test your CDN
+TODO
 
-If your redirection rules are not added automatically, please setup your bucket to have static website hosting enabled, by default you will need to add index and error documents, even though these aren't used.
+## To deploy an s3 hosted cloud front cached instance (recommended)
 
-|key    |value  |
-|---	|---	|
-|Use this bucket to host a website |`yes`|
-|Index document |`index.html`|
-|Error document |`error.html`|
+### 1. prerequisits
 
-Add the following redirection rule to your bucket, replacing `YOUR_LAMBDA_URL.execute-api.YOUR_LAMBDA_REGION.amazonaws.com` with your lambda url.
+- A working and running local docker deamon
+- a cpp compiler. npm install will fail to compile the native image processor if you dont have this. 
+It will however tell you what it needs to install. On a Mac you will need to have xcode installed.
+- A hosted zone configured in AWS to add your cdn url to.
+- A certificate in AWS certificate manager (MUST BE in us-east-1 region) to use for the cdn domain you wish to create.
 
-```xml
-<RoutingRules>
-  <RoutingRule>
-    <Condition>
-      <HttpErrorCodeReturnedEquals>404</HttpErrorCodeReturnedEquals>
-    </Condition>
-    <Redirect>
-      <Protocol>https</Protocol>
-      <HostName>YOUR_LAMBDA_URL.execute-api.YOUR_LAMBDA_REGION.amazonaws.com</HostName>
-      <ReplaceKeyPrefixWith>dev/resizer/</ReplaceKeyPrefixWith>
-      <HttpRedirectCode>302</HttpRedirectCode>
-    </Redirect>
-  </RoutingRule>
-</RoutingRules>
-```
+### 1. Clone this repo and add your own config.
 
-## 6. Signed upload
-
-> TODO : Document this
-
-## 7. Deploying changes
-
-> ``` node deploy.js ```
-
-If you are re-deploying the lambda, you will need to comment out the following in your serverless.yaml to prevent attempted re-creation of buckets
+Config can be either added to a `.env` file, as system properties or a combination of both. 
+The following settings need to be provided:
 
 ```
-plugins:
-  - create-s3-bucket-redirect
-...
-resources:
-  Resources:
-    SourceImageBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: ${env:SOURCE_S3_BUCKET_NAME}
-        AccessControl: PublicRead
+AWS_ACCESS_KEY_ID=YOURAWSAKID
+AWS_SECRET_ACCESS_KEY=YOURAWSSAK
+AWS_REGION='eu-west-1' # your aws region
+CLOUD_FRONT_DOMAIN=your.cdn.dot.your.domain.name.com
+CLOUD_FRONT_HOSTED_ZONE=your.domain.name.com. (NOTE trailing dot is important as its part of the hosted zone name)
+CLOUD_FRONT_CERT_ARN=yourCertArn
 ```
 
-## 8. Multiple instances in the same AWS account
+## 2. install and deploy
 
-If you are deploying multiple instances within the same AWS account, you will need to rename `SourceImageBucketProd` in the `serverless.yaml` and `create-s3-bucket-redirect.js` to something unique
+Just a warning, its takes ages to initialize a cloudfront instance so this step takes a while...
+
+```
+npm install && npm run deploy
+```
+
+## 3. upload an image and test your CDN
+TODO

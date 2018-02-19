@@ -8,9 +8,13 @@ const envVars = [
 	'AWS_ACCESS_KEY_ID',
 	'AWS_SECRET_ACCESS_KEY',
 	'AWS_REGION',
+	'AWS_CLIENT_TIMEOUT',
 	'SOURCE_S3_BUCKET_NAME',
 	'SOURCE_S3_WEBSITE',
-	'CLOUD_FRONT_URL'
+	'CLOUD_FRONT_DOMAIN',
+	'CLOUD_FRONT_HOSTED_ZONE',
+	'CLOUD_FRONT_CERT_ARN',
+	'CACHE_MAX_AGE'
 ];
 
 const exportStatement = (name, value) => name && value ? `export ${name}="${value}" && ` : '';
@@ -47,7 +51,7 @@ const runDockerFile = () => new Promise((resolve, reject) => {
 		console.error(`stderr: ${data}`);
 	});
   dockerbuildDeploy.stdout.on('data', (data) => {
-    console.log(`stdout: ${data}`);
+    console.log(data);
   });
 	dockerbuildDeploy.on('close', (code) => {
 		if (code === 0) {

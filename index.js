@@ -24,8 +24,8 @@ const resizerPromise = (event, context, path) => {
       const result = {
         statusCode: 302,
         headers: {
+          'Content-Type': info.contentType,
           Location: info.url,
-          'Cache-Control': 'no-cache, no-store'
         },
         body: '',
       };
@@ -44,6 +44,12 @@ export const resizer = (event, context, callback) => {
     .then(resp => callback(null, resp))
     .catch((err) => {
       console.error(err);
-      return err.isJoi ? callback(null, { statusCode: 400, body: err.toString() }) : callback(err);
+      if (err.isJoi) {
+        return callback(null, { statusCode: 400, body: err.toString() });
+      }
+      if(err.code === 'NoSuchKey') {
+        return callback(null, { statusCode: 404 });
+      }
+      return callback(err);
     });
 };
