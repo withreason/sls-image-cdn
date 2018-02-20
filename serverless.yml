@@ -84,6 +84,16 @@ resources:
       Properties:
         BucketName: ${self:custom.bucketName}
         AccessControl: PublicRead
+        CorsConfiguration:
+          CorsRules:
+            - AllowedHeaders:
+                - '*'
+              AllowedOrigins:
+                - '*'
+              AllowedMethods:
+                - GET
+                - HEAD
+                - PUT
         WebsiteConfiguration:
           IndexDocument: index.html
           ErrorDocument: error.html
