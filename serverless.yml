@@ -8,7 +8,9 @@ plugins:
 
 custom:
   webpack: webpack.config.js
-  webpackIncludeModules: true
+  webpackIncludeModules:
+    forceExclude:
+      - aws-sdk
   bucketDeletionPolicy: ${env:SOURCE_S3_BUCKET_DELETION_POLICY, self:custom.default.bucketDeletionPolicy}
   bucketName: ${env:CLOUD_FRONT_DOMAIN, env:SOURCE_S3_BUCKET_NAME}
   cloudFrontDomain: ${env:CLOUD_FRONT_DOMAIN, ''}

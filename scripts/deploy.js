@@ -4,6 +4,8 @@ const fs = require('fs');
 const { exec } = require('child_process');
 require('dotenv').config();
 
+process.chdir(__dirname + '/..');
+
 const stage = process.argv[2];
 const stageStatement = stage ? `--stage ${stage} ` : '';
 
@@ -58,7 +60,7 @@ const removeDockerFile = () => new Promise((resolve, reject) => fs.unlink('./Doc
 }));
 
 const runDockerFile = () => new Promise((resolve, reject) => {
-	const dockerbuildDeploy = exec('docker build -t sls-zone-file-cdn .');
+	const dockerbuildDeploy = exec('docker build --no-cache -t sls-zone-file-cdn .');
 	dockerbuildDeploy.stderr.on('data', (data) => {
 		console.error(`stderr: ${data}`);
 	});

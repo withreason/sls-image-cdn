@@ -1,9 +1,11 @@
-import chai from 'chai';
-import fetch from 'node-fetch';
-const { expect } = chai;
-import { createReadStream, createWriteStream, statSync } from 'fs';
-import aws4 from 'aws4';
-import URL from 'url-parse';
+const chai = require('chai');
+const expect = chai.expect;
+const createReadStream = require('fs').createReadStream;
+const createWriteStream = require('fs').createWriteStream;
+const statSync = require('fs').statSync;
+const fetch = require('node-fetch');
+const aws4 = require('aws4');
+const URL = require('url-parse');
 
 const env = process.env;
 const credentials = {
@@ -47,14 +49,14 @@ function writeResponseToFile(res, fileName) {
   })
 }
 
-export function requestUploadUrl(apiEndpoint, options, headers) {
+function requestUploadUrl(apiEndpoint, options, headers) {
   return (headers
     ? makeRequest(`${apiEndpoint}/upload-url`, 'POST', JSON.stringify(options), headers)
     : makeSignedRequest(`${apiEndpoint}/upload-url`,'POST', JSON.stringify(options)))
     .then(res => res.ok ? res.json() : res.text().then(text => ({ status: res.status, text})))
 }
 
-export function uploadFile(url, fileName) {
+function uploadFile(url, fileName) {
   const fileStats = statSync(fileName);
   const imageStream = createReadStream(fileName);
   return fetch(url, {
@@ -66,12 +68,19 @@ export function uploadFile(url, fileName) {
   }).then(res => expect(res.ok).to.be.true)
 }
 
-export function compareFileSizes(f1, f2) {
+function compareFileSizes(f1, f2) {
   const stats1 = statSync(f1);
   const stats2 = statSync(f2);
   return stats1.size - stats2.size;
 }
 
-export function fetchFile(url, dest) {
+function fetchFile(url, dest) {
   return fetch(url).then(res => writeResponseToFile(res, dest))
 }
+
+module.exports = {
+  requestUploadUrl,
+  uploadFile,
+  compareFileSizes,
+  fetchFile
+};

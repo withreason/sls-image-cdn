@@ -2,6 +2,8 @@
 const { exec } = require('child_process');
 require('dotenv').config();
 
+process.chdir(__dirname + '/..');
+
 const stage = process.argv[2];
 const stageStatement = stage ? `--stage ${stage} ` : '';
 
@@ -10,7 +12,7 @@ const regionStatement = region ? `--region ${region} ` : '';
 
 
 const runUndeploy = () => new Promise((resolve, reject) => {
-	const removeCmd = exec(`./node_modules/serverless/bin/serverless remove ${stageStatement}${regionStatement}`);
+	const removeCmd = exec(`node -e 'require(\`serverless/bin/serverless\`)' noscript remove ${stageStatement}${regionStatement}`);
   removeCmd.stderr.on('data', (data) => {
 		console.error(`stderr: ${data}`);
 	});

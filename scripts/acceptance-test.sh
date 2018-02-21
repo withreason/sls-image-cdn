@@ -45,7 +45,7 @@ C_AUTH="export UPLOAD_AUTHORIZER_FILE=test/acceptance/custom-auth"
 UNSET_C_AUTH="unset UPLOAD_AUTHORIZER_FILE"
 
 ${BNAME} && ${DP} && ${DEPLOY} | tee deploy.log && export API_ENDPOINT=$(cat deploy.log | grep 'ServiceEndpoint' | cut -d ' ' -f 2) && ${RM_LOG} && \
-./node_modules/mocha/bin/mocha --timeout 60000 --compilers js:babel-core/register test/acceptance/upload-iam.spec.ac.js && \
+node -e 'require(`mocha/bin/mocha`)' noscript --timeout 60000 test/acceptance/upload-iam.spec.ac.js && \
 export SLS_DEBUG=* && ${UNDEPLOY} && \
 # TODO fix the issue with custom Authenticators where the webpack plugin is not including them
 #${BNAME} && ${DP} && ${C_AUTH} && ${DEPLOY} | tee deploy.log && export API_ENDPOINT=$(cat deploy.log | grep 'ServiceEndpoint' | cut -d ' ' -f 2) && ${RM_LOG} && \

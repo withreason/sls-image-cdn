@@ -1,8 +1,11 @@
-
-import chai from 'chai';
-const { expect } = chai;
-import { unlinkSync } from 'fs';
-import { fetchFile, compareFileSizes, requestUploadUrl, uploadFile} from './test-utils'
+const chai = require('chai');
+const expect = chai.expect;
+const unlinkSync = require('fs').unlinkSync;
+const testUtils = require('./test-utils');
+const fetchFile = testUtils.fetchFile;
+const compareFileSizes = testUtils.compareFileSizes;
+const requestUploadUrl = testUtils.requestUploadUrl;
+const uploadFile = testUtils.uploadFile;
 
 const apiEndpoint = process.env.API_ENDPOINT;
 

@@ -7,7 +7,7 @@ function getHash(name) {
 
 // Use hash here to keep the names short. using the full bucket name can breach aws resource lengths for lambda roles.
 module.exports.serviceName = function() {
-  return `sls-image-cdn-${getHash(env.cloudFront.domain || env.bucketName)}`;
+  return `sls-image-cdn-${getHash(env.cloudFront.domain || env.bucketName || 'no-bucket')}`;
 }
 
 module.exports.uploadAuthorizerName =  function() {

@@ -18,16 +18,14 @@
     "start": "./node_modules/serverless/bin/serverless offline -s dev",
     "test": "./node_modules/mocha/bin/mocha --compilers js:babel-core/register test/**.spec.js",
     "test:acceptance": "./scripts/acceptance-test.sh",
-    "build": "./node_modules/serverless/bin/serverless webpack --out .webpack"
+    "build": "SOURCE_S3_BUCKET_NAME=test ./node_modules/serverless/bin/serverless webpack --out .webpack"
   },
   "dependencies": {
     "babel-polyfill": "^6.16.0",
     "joi": "^12.0.0",
     "uuid": "^3.2.1",
     "s3-public-url": "^1.0.0",
-    "sharp": "^0.19.0"
-  },
-  "devDependencies": {
+    "sharp": "^0.19.0",
     "aws-sdk": "^2.94.0",
     "aws4": "^1.6.0",
     "babel-cli": "^6.18.0",

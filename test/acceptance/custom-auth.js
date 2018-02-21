@@ -15,6 +15,8 @@ const buildPolicy = (event, userId, effect) => {
   return authResponse;
 };
 
-export function uploadAuthorizer(event, context, callback){
+function uploadAuthorizer(event, context, callback){
   return callback(null, buildPolicy(event, event.authorizationToken, event.authorizationToken ? 'Allow' : 'Deny'));
 }
+
+module.exports.uploadAuthorizer = uploadAuthorizer;
