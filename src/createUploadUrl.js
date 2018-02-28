@@ -36,9 +36,11 @@ function createUrl(contentType, filename) {
     }
   }
 
+  const bucketKey = env.cloudFront.domain ? `images/${key}` : key;
+
   const signatureOptions = {
     Bucket: env.bucketName,
-    Key: key,
+    Key: bucketKey,
     ContentType: contentType,
     ACL: 'public-read',
     Expires: ONE_MINUTE
