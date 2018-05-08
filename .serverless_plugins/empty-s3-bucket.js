@@ -1,7 +1,5 @@
 'use strict';
 
-const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
-
 module.exports = class EmptyS3Bucket {
 
   constructor(serverless, options) {
@@ -16,24 +14,25 @@ module.exports = class EmptyS3Bucket {
       return;
     }
     const provider = serverless.getProvider('aws');
+    const bucketName = serverless.service.custom.bucketName;
 
-    serverless.cli.log(`Getting all objects in S3 bucket ${BUCKET_NAME} ...`);
+    serverless.cli.log(`Getting all objects in S3 bucket ${bucketName} ...`);
     return provider.request('S3', 'listObjectsV2', {
-      Bucket: BUCKET_NAME,
+      Bucket: bucketName,
     }).then(result => {
       if (result.Contents.length === 0) {
         return;
       }
 
-      serverless.cli.log(`Removing objects in S3 bucket ${BUCKET_NAME}...`);
+      serverless.cli.log(`Removing objects in S3 bucket ${bucketName}...`);
       return provider.request('S3', 'deleteObjects', {
-        Bucket: BUCKET_NAME,
+        Bucket: bucketName,
         Delete: {
           Objects: result.Contents.map(content => ({Key: content.Key})),
         },
       }).then(() => {
         if (result.IsTruncated) {
-          return this.emptyS3Bucket(BUCKET_NAME);
+          return this.emptyS3Bucket(serverless);
         }
       })
     });

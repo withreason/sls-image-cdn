@@ -23,12 +23,16 @@ class CreateS3BucketRedirect {
       `)
     }
     apiGatewayEndpoint = apiGatewayEndpoint
-      .substring('https://'.length, apiGatewayEndpoint.length - (stage.length + 1))
+      .substring('https://'.length, apiGatewayEndpoint.length - (stage.length + 1));
+
+    const redirectToHost = serverless.service.custom.cloudFrontDomain || apiGatewayEndpoint;
+    const stagePrefix = serverless.service.custom.cloudFrontDomain ? '' : `${stage}/`;
+    const redirectToPath = `${stagePrefix}${lambdaFunctionName}/`
 
     const s3 = new serverless.providers.aws.sdk.S3()
 
     const params = {
-      Bucket: process.env.SOURCE_S3_BUCKET_NAME,
+      Bucket: serverless.service.custom.bucketName,
       WebsiteConfiguration: {
         ErrorDocument: {
           Key: 'error.html',
@@ -39,9 +43,9 @@ class CreateS3BucketRedirect {
         RoutingRules: [
           {
             Redirect: {
-              HttpRedirectCode: '307',
-              HostName: apiGatewayEndpoint,
-              ReplaceKeyPrefixWith: [stage, lambdaFunctionName, ''].join('/'),
+              HttpRedirectCode: '302',
+              HostName: redirectToHost,
+              ReplaceKeyPrefixWith: redirectToPath,
               Protocol: 'https',
             },
             Condition: {
@@ -51,8 +55,6 @@ class CreateS3BucketRedirect {
         ],
       },
     }
-
-    console.log(JSON.stringify(params))
     s3.putBucketWebsite(params, (err, data) => {
       if (err) {
         console.log(err, err.stack) // an error occurred
@@ -63,5 +65,4 @@ class CreateS3BucketRedirect {
   }
 }
 
-// now we need to make our plugin object available to the framework to execute
 module.exports = CreateS3BucketRedirect

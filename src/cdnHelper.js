@@ -1,12 +1,7 @@
 import { S3 } from 'aws-sdk';
-import s3PublicUrl from 's3-public-url';
+import env from './env';
 
 const s3 = new S3();
-
-const BUCKET_NAME = process.env.SOURCE_S3_BUCKET_NAME;
-const CUSTOM_URL = process.env.SOURCE_S3_WEBSITE;
-const CLOUD_FRONT_URL = process.env.CLOUD_FRONT_URL;
-const AWS_REGION = process.env.AWS_REGION;
 
 /**
  * Downloads a image from the bucket.
@@ -17,7 +12,7 @@ const AWS_REGION = process.env.AWS_REGION;
 export const downloadImage = (key, format) => {
 	const filename = [key, '.', format].join('');
 	const params = {
-		Bucket: BUCKET_NAME,
+		Bucket: env.bucketName,
 		Key: filename,
 	};
 
@@ -43,11 +38,12 @@ export const downloadImage = (key, format) => {
 export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 	const filename = [key, ',', paramsString, '.', format].join('');
 	const params = {
-		Bucket: BUCKET_NAME,
+		Bucket: env.bucketName,
 		Key: filename,
 		Body: imageBuffer,
 		ACL: 'public-read',
 		ContentType: ['image', format].join('/'),
+		CacheControl: `max-age=${env.cache.maxAge}`
 	};
 
 	return new Promise((resolve, reject) => {
@@ -56,12 +52,12 @@ export const uploadImage = (imageBuffer, key, format, paramsString = '') => {
 				console.error(err.code, '-', err.message);
 				return reject(err);
 			}
-			//TODO fix the cloud front redirect issue properly when adding cloud front to the cdn stack
-			const url = CLOUD_FRONT_URL ? s3PublicUrl.getHttps(BUCKET_NAME, filename, AWS_REGION)
-				: CUSTOM_URL ? `${CUSTOM_URL}/${filename}`
-				: `http://${BUCKET_NAME}.s3-website-${AWS_REGION}.amazonaws.com/${filename}`;
+			const url = env.cloudFront.domain ? `https://${env.cloudFront.domain}/${filename}`
+        : env.customUrl ? `${env.customUrl}/${filename}`
+				: `http://${env.bucketNam}.s3-website-${env.region}.amazonaws.com/${filename}`;
 			return resolve({
-				url,
+        url,
+				contentType: params.ContentType,
 				...data,
 			});
 		});

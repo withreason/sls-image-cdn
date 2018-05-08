@@ -77,6 +77,13 @@ export default (path) => {
   );
 };
 
+export class UnknownParamError extends Error {
+  constructor(name) {
+    super(`the parameter name ${name} is not known`);
+    this.name = this.constructor.name;
+  }
+}
+
 export const paramsToPathString = (params) => {
 	const newParams = [];
 
@@ -84,6 +91,9 @@ export const paramsToPathString = (params) => {
 		if (key === 'format' || key === 'key') {
 			continue;
 		}
+		if (!transformersReverse[key]) {
+		  throw new UnknownParamError(key);
+    }
     const value = params[key];
 		newParams.push([transformersReverse[key], value].join('_'));
 	}
